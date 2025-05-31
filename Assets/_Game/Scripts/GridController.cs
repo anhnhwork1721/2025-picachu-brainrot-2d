@@ -226,9 +226,7 @@ namespace Game.Core
             lineRenderer.positionCount = 0;
             nodeSelected = null;
 
-            SlideAllNodes(nodes);
-            yield return new WaitForSeconds(0.5f);
-            isMatching = false;
+            StartSlideAllNodes();
         }
 
         public static List<Node> CanMatchWithPath(Node start, Node end)
@@ -301,17 +299,31 @@ namespace Game.Core
 
         #region Level
 
-        public void SlideAllNodes(List<NodeController> nodeControllers)
+       public void StartSlideAllNodes()
+        {
+            StopAllCoroutines();
+            StartCoroutine(SlideAllNodesCoroutine(nodes));
+        }
+
+        private IEnumerator SlideAllNodesCoroutine(List<NodeController> nodeControllers)
         {
             bool canMove;
+            int maxIterations = 100;
+            int loopCount = 0;
 
             do
             {
                 canMove = false;
+                loopCount++;
 
-                foreach (var controller in nodeControllers)
+                if (loopCount > maxIterations)
                 {
-                    Node node = controller.Node;
+                    yield break;
+                }
+
+                for (int i = 0; i < nodeControllers.Count; i++)
+                {
+                    Node node = nodeControllers[i].Node;
 
                     if (node.x == 0 || node.x == (width - 1) || node.y == 0 || node.y == (height - 1))
                         continue;
@@ -321,7 +333,7 @@ namespace Game.Core
 
                     Node target = GetNeighborByGridType(node);
                     if (target == null || target.id != -1
-                     || target.x == 0 || target.x == (width - 1) || target.y == 0 || target.y == (height - 1))
+                    || target.x == 0 || target.x == (width - 1) || target.y == 0 || target.y == (height - 1))
                         continue;
 
                     target.id = node.id;
@@ -331,12 +343,16 @@ namespace Game.Core
                     if (targetCtrl != null)
                         targetCtrl.SetIdNode(target.id, _data.AssetData[0].SpriteData[target.id]);
 
-                    controller.SetIdNode(-1);
+                    nodeControllers[i].SetIdNode(-1);
 
                     canMove = true;
+
+                    yield return null;
                 }
-            }
-            while (canMove);
+
+            } while (canMove);
+            
+            isMatching = false;
         }
 
         private Node GetNeighborByGridType(Node node)
@@ -351,10 +367,10 @@ namespace Game.Core
                 case GridType.TopRight: return node.topRight;
                 case GridType.BottomLeft: return node.bottomLeft;
                 case GridType.BottomRight: return node.bottomRight;
-                case GridType.HaftVertical: return node.y > (height / 2) ? node.bottom : node.top;
-                case GridType.HaftHorizontal: return node.x > (width / 2) ? node.right : node.left;
-                case GridType.VerticalHaft: return node.y < (height / 2) ? node.bottom : node.top;
-                case GridType.HorizontalHaft: return node.x < (width / 2) ? node.right : node.left;
+                case GridType.HaftVertical: return node.y >= (height / 2) ? node.bottom : node.top;
+                case GridType.HaftHorizontal: return node.x >= (width / 2) ? node.right : node.left;
+                case GridType.VerticalHaft: return node.y <= (height / 2) ? node.bottom : node.top;
+                case GridType.HorizontalHaft: return node.x <= (width / 2) ? node.right : node.left;
                 default: return null;
             }
         }
