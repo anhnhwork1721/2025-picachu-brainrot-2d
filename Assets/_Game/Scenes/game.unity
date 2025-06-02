@@ -491,8 +491,10 @@ MonoBehaviour:
   height: 11
   offset: {x: 0.85, y: 1.05}
   nodePrefab: {fileID: 6798879871342353708, guid: fb3a08e5c82dc4d269f359d54dccc482, type: 3}
+  itemPrefab: {fileID: 2368794611493453753, guid: 4c4323e9de6dd4697a82f65be5a4905a, type: 3}
   nodePool: []
   nodes: []
+  itemPool: []
   content: {fileID: 1969864707}
   poolParent: {fileID: 1382150260}
   lineRenderer: {fileID: 1419210421}

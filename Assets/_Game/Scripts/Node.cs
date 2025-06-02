@@ -11,7 +11,7 @@ namespace Game.Core
         public int y;
         public Vector3 position;
         public int id;
-        public Node top; 
+        public Node top;
         public Node bottom;
         public Node left;
         public Node right;
@@ -19,5 +19,13 @@ namespace Game.Core
         public Node bottomLeft;
         public Node topRight;
         public Node bottomRight;
+
+        public ItemController item;
+
+        public void UpdateItem(int id, ItemController item)
+        {
+            this.id = id;
+            this.item = item;
+        }
     }
 }

@@ -5,27 +5,53 @@ namespace Game.Core
     public class NodeController : MonoBehaviour
     {
         public Node Node;
-        public SpriteRenderer sprBg;
-        public SpriteRenderer sprItem;
+        private ItemController cacheItem;
 
         public void Init(Node node)
         {
             Node = node;
-
-            sprBg.enabled = false;
         }
 
-        public void SetIdNode(int id, Sprite spr = null)
+        public void CreateItem(int id, Sprite spr = null)
         {
             Node.id = id;
-            sprItem.sprite = spr;
-            sprItem.enabled = id != -1;
-            sprBg.enabled = false;
+            if (id != -1)
+            {
+                Node.item = GridController.Instance.GetItem(this);
+                Node.item.Init(this, spr);
+            }
+        }
+
+        public void ClearNode()
+        {
+            Node.id = -1;
+
+            HideItem();
+        }
+
+        public void UpdateChangeItem()
+        {
+            if (Node.id == -1)
+            {
+                ClearNode();
+            }
+            else
+            {
+                if (Node.item != null)
+                {
+                    if (Node.item != cacheItem)
+                    {
+                        cacheItem = Node.item;
+                        Node.item.node = this;
+                        LeanTween.move(Node.item.gameObject, transform.position, 0.2f).setEase(LeanTweenType.easeOutQuad);
+                    }
+                }
+            }
         }
 
         public void Selected(bool selected = true)
         {
-            sprBg.enabled = selected;
+            Node.item.sprBg.enabled = selected;
         }
 
         public void OnMouseDown()
@@ -38,8 +64,18 @@ namespace Game.Core
         public void Hide()
         {
             Node = null;
-            sprBg.enabled = false;
-            sprItem.enabled = false;
+            HideItem();
+        }
+
+        private void HideItem()
+        {
+            cacheItem = null;
+            if (Node.item != null && Node.item.node == this)
+            {
+                Node.item.Clear();
+                GridController.Instance.HideItem(Node.item);
+                Node.item = null;
+            }
         }
     }
 }

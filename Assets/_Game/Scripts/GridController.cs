@@ -41,8 +41,11 @@ namespace Game.Core
         public int height = 11;
         public Vector2 offset = new Vector2(0.2f, 0.4f);
         public GameObject nodePrefab;
+        public GameObject itemPrefab;
         public List<NodeController> nodePool = new List<NodeController>();
         public List<NodeController> nodes;
+        public List<ItemController> itemPool = new List<ItemController>();
+
         public Transform content;
         public Transform poolParent;
         public LineRenderer lineRenderer;
@@ -154,15 +157,40 @@ namespace Game.Core
                 var node = nodes[i];
                 if (node.Node.x == 0 || node.Node.x == (width - 1) || node.Node.y == 0 || node.Node.y == (height - 1))
                 {
-                    node.SetIdNode(-1);
+                    node.CreateItem(-1);
                     continue;
                 }
 
                 int index = Random.Range(0, ids.Count);
-                node.SetIdNode(ids[index], _data.AssetData[0].SpriteData[ids[index]]);
+                node.CreateItem(ids[index], _data.AssetData[0].SpriteData[ids[index]]);
 
                 ids.RemoveAt(index);
             }
+        }
+
+        public ItemController GetItem(NodeController node)
+        {
+            var item = itemPool.FirstOrDefault(a => !a.gameObject.activeSelf);
+
+            if (item == null)
+            {
+                var goItem = Instantiate(itemPrefab, poolParent);
+                goItem.SetActive(false);
+                item = goItem.GetComponent<ItemController>();
+                itemPool.Add(item);
+            }
+
+            item.transform.SetParent(content);
+            item.transform.localScale = Vector3.one;
+            item.transform.position = node.transform.position;
+
+            return item;
+        }
+
+        public void HideItem(ItemController item)
+        {
+            item.gameObject.SetActive(false);
+            item.transform.SetParent(poolParent);
         }
 
         public void ClearData()
@@ -220,8 +248,8 @@ namespace Game.Core
         private IEnumerator ClearNodeDone(NodeController nodeA, NodeController nodeB)
         {
             yield return new WaitForSeconds(0.35f);
-            nodeA.SetIdNode(-1);
-            nodeB.SetIdNode(-1);
+            nodeA.ClearNode();
+            nodeB.ClearNode();
 
             lineRenderer.positionCount = 0;
             nodeSelected = null;
@@ -336,24 +364,27 @@ namespace Game.Core
                     || target.x == 0 || target.x == (width - 1) || target.y == 0 || target.y == (height - 1))
                         continue;
 
-                    target.id = node.id;
-                    node.id = -1;
+                    target.UpdateItem(node.id, node.item);
+                    node.UpdateItem(-1, null);
 
-                    var targetCtrl = FindControllerByNode(nodeControllers, target);
-                    if (targetCtrl != null)
-                        targetCtrl.SetIdNode(target.id, _data.AssetData[0].SpriteData[target.id]);
+                    // var targetCtrl = FindControllerByNode(nodeControllers, target);
+                    // if (targetCtrl != null)
+                    //     targetCtrl.SetIdNode(target.id, nodeControllers[i].Node.item);
 
-                    nodeControllers[i].SetIdNode(-1);
+                    // nodeControllers[i].SetIdNode(-1);
 
                     canMove = true;
-
                     yield return null;
                 }
 
+                nodes.ForEach(a => a.UpdateChangeItem());
+
             } while (canMove);
-            
+
+            yield return new WaitForSeconds(.2f);
             isMatching = false;
         }
+        
 
         private Node GetNeighborByGridType(Node node)
         {
@@ -378,6 +409,11 @@ namespace Game.Core
         private NodeController FindControllerByNode(List<NodeController> list, Node node)
         {
             return list.FirstOrDefault(ctrl => ctrl.Node == node);
+        }
+
+        private NodeController GetNodeController(int x, int y)
+        {
+            return nodes.FirstOrDefault(a => a.Node.x == x && a.Node.y == y);
         }
 
         #endregion
